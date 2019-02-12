@@ -17,7 +17,7 @@ At .\Remove-OldGitBranches.ps1:50 char:3
 +   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified: [], RemoteException
     + FullyQualifiedErrorId : NativeCommandError
- 
+
  - [deleted]         defect/Duplicates
 
 .EXAMPLE
@@ -32,7 +32,7 @@ At .\Remove-OldGitBranches.ps1:50 char:3
 
   Will remove even branches that have not been merged to master. This will cause loss of historical information, since those commits will no longer have any branch pointer to them.
 
-.LINK 
+.LINK
   http://git-scm.com/docs/git-branch
 #>
 
@@ -82,11 +82,11 @@ if ($deleteUnmerged) {
   $mergeParameter = "--merged"
 }
 
-$remoteBranches = git branch $branchParameter $mergeParameter master | 
-  ForEach-Object { $_.ToString().Trim() } | 
-  ForEach-Object { Remove-Asterisk $_ } | 
+$remoteBranches = git branch $branchParameter $mergeParameter master |
+  ForEach-Object { $_.ToString().Trim() } |
+  ForEach-Object { Remove-Asterisk $_ } |
   select-string -pattern "release/|origin/master|master$|git-backify" -NotMatch |
-  ForEach-Object { $_.ToString() } | 
+  ForEach-Object { $_.ToString() } |
   Where-Object { (-not $remote) -or $_.ToString().StartsWith($remotePath) } |
   ForEach-Object {
       if($remote) {
@@ -96,12 +96,13 @@ $remoteBranches = git branch $branchParameter $mergeParameter master |
       }
       $properties = @{
         'Name'= $name;
-        'Hash'= (git rev-parse $_);
+        'Hash'= (git log -1 --pretty=format:%h $_);
         'Date'= Parse-GitDate (git show -s --format=%ci (git rev-parse $_));
+        'Author'= (git log -1 --pretty=format:%an $_);
       }
-      New-Object PSObject –Prop $properties 
-  } | 
-  Where-Object { ([DateTime]::Today - $_.Date).TotalDays -ge $age } | 
+      New-Object PSObject –Prop $properties
+  } |
+  Where-Object { ([DateTime]::Today - $_.Date).TotalDays -ge $age } |
   Sort-Object Date
 
 if($remoteBranches.Length -eq 0) {
